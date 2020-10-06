@@ -1,4 +1,4 @@
-import React from 'react';
+import React , { useEffect, useState }from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import {
@@ -12,6 +12,7 @@ import {
   makeStyles
 } from '@material-ui/core';
 import { Search as SearchIcon } from 'react-feather';
+import Results from './Results';
 
 const useStyles = makeStyles((theme) => ({
   root: {},
@@ -23,15 +24,15 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const Toolbar = ({ className, ...rest }) => {
+const Toolbar = ({ className,customers, ...rest }) => {
   const classes = useStyles();
-
+  const [textbox, setTextbox] = useState({ input: "" })
   return (
     <div
       className={clsx(classes.root, className)}
       {...rest}
     >
-      <Box
+      {/* <Box
         display="flex"
         justifyContent="flex-end"
       >
@@ -47,12 +48,21 @@ const Toolbar = ({ className, ...rest }) => {
         >
           Add customer
         </Button>
-      </Box>
+      </Box> */}
       <Box mt={3}>
         <Card>
           <CardContent>
             <Box maxWidth={500}>
               <TextField
+              value={textbox.input}
+              onChange={(e) => {
+                var { name, value } = e.target;
+                  setTextbox((prevState) => ({
+                    ...prevState,
+                    [name]: value,
+                  }));
+              }}
+              name="input"
                 fullWidth
                 InputProps={{
                   startAdornment: (
@@ -70,6 +80,9 @@ const Toolbar = ({ className, ...rest }) => {
                 variant="outlined"
               />
             </Box>
+              <Box mt={3}>
+                <Results customers={customers} textbox={textbox.input} />
+              </Box>
           </CardContent>
         </Card>
       </Box>

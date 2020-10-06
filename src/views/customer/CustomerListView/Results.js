@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import moment from 'moment';
+import Moment from 'react-moment';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import {
   Avatar,
@@ -18,6 +19,8 @@ import {
   makeStyles
 } from '@material-ui/core';
 import getInitials from 'src/utils/getInitials';
+import {postService} from '../../../services/RestService'
+import { isArray } from 'lodash';
 
 const useStyles = makeStyles((theme) => ({
   root: {},
@@ -26,11 +29,38 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const Results = ({ className, customers, ...rest }) => {
+const Results = ({ className, customers,textbox, ...rest }) => {
   const classes = useStyles();
   const [selectedCustomerIds, setSelectedCustomerIds] = useState([]);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const [page, setPage] = useState(0);
+  const [users, setUsers] = useState([])
+  const [count, setCount] = useState(0)
+
+
+  const fetchData = async(limit, page,search) => {
+    let skip = limit*page
+    let url=''
+    if(search){
+      url=`find_all_customers?search=${search}`
+    }else{
+      url='find_all_customers?skip='+skip+'&limit='+limit
+    }
+    await postService(url, null).then((response) => {
+      if(response) {
+        setUsers(response.data.data)
+        setCount(response.data.count)
+      }
+    })
+  }
+
+  useEffect(() => {
+    fetchData(limit, page,'');
+  }, []);
+
+  useEffect(() => {
+    fetchData(limit, page,textbox);
+  }, [textbox])
 
   const handleSelectAll = (event) => {
     let newSelectedCustomerIds;
@@ -66,10 +96,12 @@ const Results = ({ className, customers, ...rest }) => {
 
   const handleLimitChange = (event) => {
     setLimit(event.target.value);
+    fetchData(limit,page,'')
   };
 
   const handlePageChange = (event, newPage) => {
     setPage(newPage);
+    fetchData(limit,newPage,'')
   };
 
   return (
@@ -77,6 +109,7 @@ const Results = ({ className, customers, ...rest }) => {
       className={clsx(classes.root, className)}
       {...rest}
     >
+      <p><center><b>Total Count:{count}</b></center></p>
       <PerfectScrollbar>
         <Box minWidth={1050}>
           <Table>
@@ -94,33 +127,42 @@ const Results = ({ className, customers, ...rest }) => {
                   />
                 </TableCell>
                 <TableCell>
-                  Name
+                  User Name
                 </TableCell>
                 <TableCell>
                   Email
                 </TableCell>
-                <TableCell>
+                {/* <TableCell>
                   Location
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   Phone
                 </TableCell>
                 <TableCell>
                   Registration date
                 </TableCell>
+                <TableCell>
+                  Coins
+                </TableCell>
+                <TableCell>
+                  Referral Points
+                </TableCell>
+                <TableCell>
+                  Customer Code
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {customers.slice(0, limit).map((customer) => (
+              {users.map((customer) => (
                 <TableRow
                   hover
-                  key={customer.id}
+                  key={customer._id}
                   selected={selectedCustomerIds.indexOf(customer.id) !== -1}
                 >
                   <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedCustomerIds.indexOf(customer.id) !== -1}
-                      onChange={(event) => handleSelectOne(event, customer.id)}
+                      onChange={(event) => handleSelectOne(event, customer._id)}
                       value="true"
                     />
                   </TableCell>
@@ -139,21 +181,30 @@ const Results = ({ className, customers, ...rest }) => {
                         color="textPrimary"
                         variant="body1"
                       >
-                        {customer.name}
+                        {customer.username}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
                     {customer.email}
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     {`${customer.address.city}, ${customer.address.state}, ${customer.address.country}`}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     {customer.phone}
                   </TableCell>
                   <TableCell>
-                    {moment(customer.createdAt).format('DD/MM/YYYY')}
+                    <Moment format="D MMM YYYY">{customer.createdAt}</Moment>
+                  </TableCell>
+                  <TableCell>
+                    {customer.coins}
+                  </TableCell>
+                  <TableCell>
+                    {customer.referral_points}
+                  </TableCell>
+                  <TableCell>
+                    {customer.customer_code}
                   </TableCell>
                 </TableRow>
               ))}
@@ -163,7 +214,7 @@ const Results = ({ className, customers, ...rest }) => {
       </PerfectScrollbar>
       <TablePagination
         component="div"
-        count={customers.length}
+        count={count}
         onChangePage={handlePageChange}
         onChangeRowsPerPage={handleLimitChange}
         page={page}
